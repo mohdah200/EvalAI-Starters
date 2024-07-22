@@ -1,5 +1,5 @@
-import random
-
+import pandas as pd
+import json
 
 def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwargs):
     print("Starting Evaluation.....")
@@ -39,43 +39,28 @@ def evaluate(test_annotation_file, user_submission_file, phase_codename, **kwarg
             'submitted_at': u'2017-03-20T19:22:03.880652Z'
         }
     """
-    output = {}
-    if phase_codename == "dev":
-        print("Evaluating for Dev Phase")
-        output["result"] = [
+    # Load ground truth and user submission
+    ground_truth = pd.read_csv(test_annotation_file)
+    submission = pd.read_csv(user_submission_file)
+
+    # Ensure both files have the same length
+    if len(ground_truth) != len(submission):
+        raise ValueError("Mismatch in number of records between ground truth and submission")
+
+    # Calculate accuracy
+    accuracy = (ground_truth['class3'] == submission['class3']).mean()
+
+    # Prepare the result dictionary
+    output = {
+        "result": [
             {
-                "train_split": {
-                    "Metric1": random.randint(0, 99),
-                    "Metric2": random.randint(0, 99),
-                    "Metric3": random.randint(0, 99),
-                    "Total": random.randint(0, 99),
-                }
+                "split": "dev_split" if phase_codename == "dev_phase" else "test_split",
+                "show_to_participant": True,
+                "accuracies": {"Accuracy": accuracy * 100},
             }
-        ]
-        # To display the results in the result file
-        output["submission_result"] = output["result"][0]["train_split"]
-        print("Completed evaluation for Dev Phase")
-    elif phase_codename == "test":
-        print("Evaluating for Test Phase")
-        output["result"] = [
-            {
-                "train_split": {
-                    "Metric1": random.randint(0, 99),
-                    "Metric2": random.randint(0, 99),
-                    "Metric3": random.randint(0, 99),
-                    "Total": random.randint(0, 99),
-                }
-            },
-            {
-                "test_split": {
-                    "Metric1": random.randint(0, 99),
-                    "Metric2": random.randint(0, 99),
-                    "Metric3": random.randint(0, 99),
-                    "Total": random.randint(0, 99),
-                }
-            },
-        ]
-        # To display the results in the result file
-        output["submission_result"] = output["result"][0]
-        print("Completed evaluation for Test Phase")
+        ],
+        "submission_result": {"Accuracy": accuracy * 100},
+    }
+
+    print("Completed evaluation")
     return output
